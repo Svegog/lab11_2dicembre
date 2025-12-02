@@ -9,6 +9,8 @@ import java.awt.Toolkit;
 import java.io.Serial;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -36,12 +38,18 @@ public final class LambdaFilter extends JFrame {
 
     @Serial
     private static final long serialVersionUID = 1760990730218643730L;
+    private static final String LINESEPAR = "\n\r";
 
     private enum Command {
         /**
          * Commands.
          */
-        IDENTITY("No modifications", Function.identity());
+        IDENTITY("No modifications", Function.identity()),
+        TOLOWER("Convert to lowercase", toLower()),
+        COUNTCHAR("Count the character", countChar()),
+        COUNTLINE("Count the line", countLine()),
+        ALLWORDORDER("Order the word in alphabetical order", wordInOrder()),
+        COUNTFOREACHWORD("Print the count of each word", singleWordCount());
 
         private final String commandName;
         private final Function<String, String> fun;
@@ -100,5 +108,48 @@ public final class LambdaFilter extends JFrame {
     public static void main(final String... a) {
         final LambdaFilter gui = new LambdaFilter();
         gui.setVisible(true);
+    }
+
+    private static Function<String, String> toLower() {
+        return t -> t.chars()
+            .mapToObj(car -> String.valueOf((char) car))
+            .map(String::toLowerCase)
+            .collect(Collectors.joining());
+    }
+
+    private static Function<String, String> countChar() {
+        return t -> Long.toString(
+            t.chars()
+            .mapToObj(car -> String.valueOf((char) car))
+            .count()
+        );
+    }
+
+    private static Function<String, String> countLine() {
+        return t -> Long.toString(t.chars()
+            .mapToObj(car -> String.valueOf((char) car))
+            .filter(elem -> LINESEPAR.contains(elem)) //NOPMD: ask prof
+            .count()
+        );
+    }
+
+    private static Function<String, String> wordInOrder() {
+        return t -> Pattern.compile("\\s+")
+            .splitAsStream(t)
+            .sorted()
+            .collect(Collectors.joining(LINESEPAR));
+    }
+
+    private static Function<String, String> singleWordCount() {
+        return t -> Pattern.compile("\\s+")
+            .splitAsStream(t)
+            .collect(Collectors.groupingBy(
+                Function.identity(), 
+                Collectors.counting()
+            ))
+            .entrySet().stream()
+            .map(word -> word.getKey() + " -> " + word.getValue())
+            .distinct()
+            .collect(Collectors.joining(LINESEPAR));
     }
 }
