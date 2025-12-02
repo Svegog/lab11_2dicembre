@@ -38,7 +38,7 @@ public final class LambdaFilter extends JFrame {
 
     @Serial
     private static final long serialVersionUID = 1760990730218643730L;
-    private static final String LINESEPAR = "\n\r";
+    private static final String LINESEPAR = System.lineSeparator();
 
     private enum Command {
         /**
@@ -128,8 +128,9 @@ public final class LambdaFilter extends JFrame {
     private static Function<String, String> countLine() {
         return t -> Long.toString(t.chars()
             .mapToObj(car -> String.valueOf((char) car))
-            .filter(elem -> LINESEPAR.contains(elem)) //NOPMD: ask prof
-            .count()
+            .filter(LINESEPAR::contains)
+            .count() 
+            + 1 // adding 1 to the result because i counted only the escape characters
         );
     }
 
@@ -149,7 +150,6 @@ public final class LambdaFilter extends JFrame {
             ))
             .entrySet().stream()
             .map(word -> word.getKey() + " -> " + word.getValue())
-            .distinct()
             .collect(Collectors.joining(LINESEPAR));
     }
 }
