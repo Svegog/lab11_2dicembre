@@ -23,7 +23,6 @@ public final class ConcurrentGUI extends JFrame {
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = LoggerFactory.getLogger(ConcurrentGUI.class);
     private final JLabel display = new JLabel();
-    private transient AbstractAgent agent;
 
     /**
      * Builds a new CGUI.
@@ -41,118 +40,72 @@ public final class ConcurrentGUI extends JFrame {
         panel.add(stop);
         this.getContentPane().add(panel);
         this.setVisible(true);
-        /*
-         * Create the counter agent and start it. This is actually not so good:
-         * thread management should be left to
-         * java.util.concurrent.ExecutorService
-         */
-        agent = new UpAgent();
+
+        final var agent = new ModularAgent();
         new Thread(agent).start();
-        /*
-         * Register a listener that start the incrementing count.
-         */
-        up.addActionListener(e -> {
-            agent.stopCounting();
-            final int oldValue = agent.getCounter();
-            agent = new UpAgent(oldValue);
-            new Thread(agent).start();
-        });
-        /*
-         * Register a listener that start the decrementing count.
-         */
-        down.addActionListener(e -> {
-            agent.stopCounting();
-            final int oldValue = agent.getCounter();
-            agent = new DownAgent(oldValue);
-            new Thread(agent).start();
-        });
-        /*
-         * Register a listener that stop the app.
-         */
+        up.addActionListener(e -> agent.setOperationSign(1));
+        down.addActionListener(e -> agent.setOperationSign(-1));
         stop.addActionListener(e -> {
-            agent.stopCounting();
-            up.setEnabled(false);
-            down.setEnabled(false);
-            stop.setEnabled(false);
+                agent.stopCounting();
+                up.setEnabled(false);
+                down.setEnabled(false);
+                stop.setEnabled(false);
         });
     }
 
     /**
-     * Implementation of the class agent for incrementing counter.
+     * A modular agent that permit to choose the counter mode.
      */
-    public class UpAgent extends AbstractAgent {
+    private class ModularAgent implements Runnable {
 
         private volatile boolean stop;
+        private volatile int operationMode;
         private int counter;
 
         /**
-         * For exercises purpose.
+         * Default mode is incremental.
          */
-        public UpAgent() {
-            this.stop = false;
+        ModularAgent() {
+            this.operationMode = 1;
         }
 
         /**
-         * Constructor for setting a value for the counter.
+         * Select a new mode and a new value to start.
          * 
-         * @param value the new value
+         * @param mode can be incremental or decremental
          */
-        UpAgent(final int value) {
-            super(value);
+        public void setOperationSign(final int mode) {
+            this.operationMode = mode;
         }
 
         /**
-         * Count operation.
+         * Same as the exercises before but with a little twist.
          */
         @Override
         public void run() {
             while (!this.stop) {
-                    try {
-                        // The EDT doesn't access `counter` anymore, it doesn't need to be volatile
-                        final var nextText = Integer.toString(this.counter);
-                        SwingUtilities.invokeAndWait(() -> ConcurrentGUI.this.display.setText(nextText));
+                try {
+                    // The EDT doesn't access `counter` anymore, it doesn't need to be volatile
+                    final var nextText = Integer.toString(this.counter);
+                    SwingUtilities.invokeAndWait(() -> ConcurrentGUI.this.display.setText(nextText));
+                    // this.counter += this.operationMode;
+                    if (operationMode > 0) {
                         this.counter++;
-                        Thread.sleep(100);
-                    } catch (InvocationTargetException | InterruptedException ex) {
-                        LOGGER.error(ex.getMessage(), ex);
-                    }
-                }
-        }
-    }
-
-    /**
-     * Implementation of the class agent for decrementing counter.
-     */
-    private class DownAgent extends AbstractAgent {
-
-        private volatile boolean stop;
-        private int counter;
-
-        /**
-         * For exercises purpose.
-         * 
-         * @param value the new value
-         */
-        DownAgent(final int value) {
-            super(value);
-        }
-
-        /**
-         * Count operation.
-         */
-        @Override
-        public void run() {
-            while (!this.stop) {
-                    try {
-                        // The EDT doesn't access `counter` anymore, it doesn't need to be volatile
-                        final var nextText = Integer.toString(this.counter);
-                        SwingUtilities.invokeAndWait(() -> ConcurrentGUI.this.display.setText(nextText));
+                    } else {
                         this.counter--;
-                        Thread.sleep(100);
-                    } catch (InvocationTargetException | InterruptedException ex) {
-                        LOGGER.error(ex.getMessage(), ex);
                     }
+                    Thread.sleep(100);
+                } catch (InvocationTargetException | InterruptedException ex) {
+                    LOGGER.error(ex.getMessage(), ex);
                 }
+            }
+        }
+
+        /**
+         * Stop the counter.
+         */
+        public void stopCounting() {
+            this.stop = true;
         }
     }
 }
