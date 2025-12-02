@@ -3,7 +3,10 @@ package it.unibo.oop.workers02;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MultiThreadedSumMatrix implements SumMatrix {
+/**
+ * A matrix sum computed by multiple thread.
+ */
+public final class MultiThreadedSumMatrix implements SumMatrix {
 
     private final int nthread;
 
@@ -18,7 +21,7 @@ public class MultiThreadedSumMatrix implements SumMatrix {
     }
 
     @Override
-    public double sum(double[][] matrix) {
+    public double sum(final double[][] matrix) {
 
         final int rows = matrix.length;
         final int colums = matrix[0].length;
@@ -66,13 +69,14 @@ public class MultiThreadedSumMatrix implements SumMatrix {
         /**
          * Build a new worker.
          *
-         * @param list
-         *            the list to sum
+         * @param matrix
+         *            the matrix to sum
          * @param startpos
          *            the initial position for this worker
          * @param nelem
          *            the no. of elems to sum up for this worker
          */
+        @SuppressWarnings("PMD.ArrayIsStoredDirectly") // exercises purpose
         Worker(final double[][] matrix, final int startpos, final int nelem) {
             super();
             this.matrix = matrix;
@@ -86,9 +90,9 @@ public class MultiThreadedSumMatrix implements SumMatrix {
             final int colums = matrix[0].length;
             final int dimension = rows * colums;
             // Println used to show the working ranges for debugging purposes
-            System.out.println("Working from position " + startpos + " to position " + (startpos + nelem - 1)); // NOPMD
+            // System.out.println("Working from position " + startpos + " to position " + (startpos + nelem - 1));
             for (int i = startpos; i < dimension && i < startpos + nelem; i++) {
-                this.res += this.matrix[i/colums][i%colums];
+                this.res += this.matrix[i / colums][i % colums];
             }
         }
 
